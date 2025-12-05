@@ -49,23 +49,23 @@ cd mathCatcher
 ### Workflow for Team Members
 
 1. **Pull the latest changes before starting work:**
-   ```bash
+   ```cmd/powershell
    git pull
    ```
 
 2. **Create a new branch for your feature:**
-   ```bash
+   ```cmd/powershell
    git checkout -b feature/your-feature-name
    ```
 
 3. **Make your changes and commit regularly:**
-   ```bash
+   ```cmd/powershell
    git add .
    git commit -m "Description of your changes"
    ```
 
 4. **Push your branch to GitHub:**
-   ```bash
+   ```cmd/powershell
    git push -u origin feature/your-feature-name
    ```
 
