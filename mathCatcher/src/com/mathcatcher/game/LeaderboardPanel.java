@@ -105,12 +105,15 @@ public class LeaderboardPanel extends JPanel {
         titlePanel.setOpaque(false);
         titlePanel.setPreferredSize(new Dimension(0, 140));
         titlePanel.setMinimumSize(new Dimension(0, 140));
-        titlePanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 32, 0));
+        titlePanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 4, 0)); // Minimal bottom padding to bring buttons very close
 
         // ===== Difficulty Filter Buttons =====
         JPanel filterPanel = new JPanel(new GridLayout(1, 3, 8, 0));
         filterPanel.setOpaque(false);
-        filterPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 24, 0));
+        filterPanel.setBorder(BorderFactory.createEmptyBorder(4, 0, 24, 0)); // Very small top padding to be close to "Top 10"
+        filterPanel.setPreferredSize(new Dimension(0, 58)); // Fixed height to ensure visibility (updated for bigger buttons)
+        filterPanel.setMinimumSize(new Dimension(0, 58));
+        filterPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 58));
 
         DifficultyFilterButton easyButton = new DifficultyFilterButton("Easy", 
             selectedDifficulty == DifficultySelect.Difficulty.EASY);
@@ -176,19 +179,28 @@ public class LeaderboardPanel extends JPanel {
         });
 
         // Add components to container
+        // Use BorderLayout with title centered, back button in separate layer
         JPanel topPanel = new JPanel(new BorderLayout());
         topPanel.setOpaque(false);
-        topPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 32, 0));
-        // Wrap back button in a panel to prevent stretching
+        topPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
+        
+        // Title panel takes full width and centers text
+        topPanel.add(titlePanel, BorderLayout.CENTER);
+        
+        // Back button in separate panel that doesn't affect centering
         JPanel backButtonWrapper = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         backButtonWrapper.setOpaque(false);
         backButtonWrapper.add(backButton);
         topPanel.add(backButtonWrapper, BorderLayout.WEST);
-        topPanel.add(titlePanel, BorderLayout.CENTER);
+
+        // Create content panel to hold filter and scores
+        JPanel contentPanel = new JPanel(new BorderLayout());
+        contentPanel.setOpaque(false);
+        contentPanel.add(filterPanel, BorderLayout.NORTH);
+        contentPanel.add(scrollPane, BorderLayout.CENTER);
 
         container.add(topPanel, BorderLayout.NORTH);
-        container.add(filterPanel, BorderLayout.CENTER);
-        container.add(scrollPane, BorderLayout.SOUTH);
+        container.add(contentPanel, BorderLayout.CENTER);
 
         // Add container to main panel
         add(container, BorderLayout.CENTER);
@@ -258,10 +270,10 @@ public class LeaderboardPanel extends JPanel {
             setFocusPainted(false);
             setContentAreaFilled(false);
             setBorderPainted(false);
-            setFont(new Font("SansSerif", Font.BOLD, 14)); // Smaller font
-            setPreferredSize(new Dimension(0, 40)); // Smaller filter buttons
-            setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
-            setMinimumSize(new Dimension(0, 40));
+            setFont(new Font("SansSerif", Font.BOLD, 16)); // Slightly bigger font
+            setPreferredSize(new Dimension(0, 48)); // Slightly bigger filter buttons
+            setMaximumSize(new Dimension(Integer.MAX_VALUE, 48));
+            setMinimumSize(new Dimension(0, 48));
         }
 
         public void setSelected(boolean selected) {
