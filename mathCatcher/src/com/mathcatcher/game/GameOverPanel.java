@@ -238,6 +238,3 @@ public class GameOverPanel extends JPanel {
         }
     }
 }
-
-
-

@@ -1,5 +1,6 @@
 package com.mathcatcher.entities;
 
+import com.mathcatcher.game.DifficultySelect;
 import java.awt.*;
 
 public class FallingNumber {
@@ -10,10 +11,30 @@ public class FallingNumber {
     private static final int SIZE = 45;
 
     public FallingNumber(int x, int y, int value, int level) {
+        this(x, y, value, level, DifficultySelect.Difficulty.MEDIUM);
+    }
+
+    public FallingNumber(int x, int y, int value, int level, DifficultySelect.Difficulty difficulty) {
         this.x = x;
         this.y = y;
         this.value = value;
-        this.velocity = 2 + (level * 0.5);
+        
+        // Base velocity based on difficulty
+        double baseSpeed;
+        switch (difficulty) {
+            case EASY:
+                baseSpeed = 1.5; // Slower
+                break;
+            case MEDIUM:
+                baseSpeed = 2.0;
+                break;
+            case HARD:
+                baseSpeed = 3.0; // Faster
+                break;
+            default:
+                baseSpeed = 2.0;
+        }
+        this.velocity = baseSpeed + (level * 0.5);
         this.caught = false;
     }
 
