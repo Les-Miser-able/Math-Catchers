@@ -23,14 +23,60 @@ public class MathEquation {
     }
 
     private void generateEquation(int level, DifficultySelect.Difficulty difficulty) {
-        String[] operations = {"+", "-", "*"};
-
         isComplex = false;
         
-        // For HARD difficulty, generate more challenging equations
+        // EASY: Only addition and subtraction
+        if (difficulty == DifficultySelect.Difficulty.EASY) {
+            String[] easyOps = {"+", "-"};
+            operation = easyOps[rand.nextInt(2)];
+            
+            // Easy: numbers 1-10
+            int maxRange = 10;
+            if (operation.equals("+")) {
+                num1 = rand.nextInt(maxRange) + 1;
+                num2 = rand.nextInt(maxRange) + 1;
+                answer = num1 + num2;
+            } else { // subtraction
+                num1 = rand.nextInt(maxRange) + 10; // 10-20
+                num2 = rand.nextInt(num1 - 1) + 1; // 1 to (num1 - 1)
+                answer = num1 - num2;
+            }
+            return;
+        }
+        
+        // MEDIUM: Addition, subtraction, multiplication, and division
+        if (difficulty == DifficultySelect.Difficulty.MEDIUM) {
+            int opChoice = rand.nextInt(4); // 0=+, 1=-, 2=*, 3=/
+            
+            if (opChoice == 0) { // Addition
+                operation = "+";
+                num1 = rand.nextInt(20) + 1; // 1-20
+                num2 = rand.nextInt(20) + 1; // 1-20
+                answer = num1 + num2;
+            } else if (opChoice == 1) { // Subtraction
+                operation = "-";
+                num1 = rand.nextInt(20) + 10; // 10-30
+                num2 = rand.nextInt(num1 - 1) + 1; // 1 to (num1 - 1)
+                answer = num1 - num2;
+            } else if (opChoice == 2) { // Multiplication
+                operation = "*";
+                num1 = rand.nextInt(12) + 1; // 1-12
+                num2 = rand.nextInt(12) + 1; // 1-12
+                answer = num1 * num2;
+            } else { // Division
+                operation = "/";
+                num2 = rand.nextInt(12) + 2; // divisor 2-13
+                int quotient = rand.nextInt(12) + 2; // quotient 2-13
+                num1 = num2 * quotient; // dividend
+                answer = quotient;
+            }
+            return;
+        }
+        
+        // HARD: All operations including complex equations
         if (difficulty == DifficultySelect.Difficulty.HARD) {
-            if (rand.nextDouble() < 0.6) {
-                // 60% chance of complex equation (e.g., "9 × 9 - 8")
+            // 40% chance of complex equation (e.g., "9 × 9 - 8")
+            if (rand.nextDouble() < 0.4) {
                 isComplex = true;
                 
                 // Use larger numbers for multiplication (6-15 range)
@@ -57,96 +103,42 @@ public class MathEquation {
                     answer = multResult - num3;
                 }
                 return;
-            } else if (rand.nextDouble() < 0.8) {
-                // Division with larger numbers
-                operation = "/";
-                num2 = rand.nextInt(12) + 3; // divisor 3-14
-                int quotient = rand.nextInt(20) + 3; // quotient 3-22
-                num1 = num2 * quotient; // dividend (can be quite large)
-                answer = quotient;
-                return;
             }
-            // Otherwise continue to simple operations but with large numbers
-        }
-
-        // Simple equations for Easy/Medium or simple Hard
-        int opIndex;
-        if (difficulty == DifficultySelect.Difficulty.EASY) {
-            opIndex = rand.nextInt(2); // Only + and -
-        } else if (difficulty == DifficultySelect.Difficulty.MEDIUM) {
-            opIndex = rand.nextInt(3); // All operations (+, -, *)
-        } else { // HARD (simple case)
-            // For hard, can also include division sometimes
-            if (rand.nextDouble() < 0.3) {
+            
+            // 60% chance of simple operations (including division)
+            int opChoice = rand.nextInt(4); // 0=+, 1=-, 2=*, 3=/
+            
+            if (opChoice == 0) { // Addition
+                operation = "+";
+                num1 = rand.nextInt(81) + 20; // 20-100
+                num2 = rand.nextInt(81) + 20; // 20-100
+                answer = num1 + num2;
+            } else if (opChoice == 1) { // Subtraction
+                operation = "-";
+                num1 = rand.nextInt(81) + 50; // 50-130
+                num2 = rand.nextInt(num1 - 20) + 20; // 20 to (num1 - 1)
+                answer = num1 - num2;
+            } else if (opChoice == 2) { // Multiplication
+                operation = "*";
+                num1 = rand.nextInt(20) + 1; // 1-20
+                num2 = rand.nextInt(20) + 1; // 1-20
+                answer = num1 * num2;
+            } else { // Division
                 operation = "/";
                 num2 = rand.nextInt(15) + 5; // divisor 5-19
                 int quotient = rand.nextInt(25) + 5; // quotient 5-29
-                num1 = num2 * quotient; // dividend (can be quite large)
+                num1 = num2 * quotient; // dividend
                 answer = quotient;
-                return;
             }
-            opIndex = rand.nextInt(3); // +, -, *
-        }
-
-        operation = operations[opIndex];
-
-        // Determine range based on difficulty ONLY (ignore level scaling)
-        int maxRange;
-        switch (difficulty) {
-            case EASY:
-                maxRange = 10; // Easy: numbers 1-10
-                break;
-            case MEDIUM:
-                maxRange = 20; // Medium: numbers 1-20
-                break;
-            case HARD:
-                maxRange = 100; // Hard: numbers can go up to 100
-                break;
-            default:
-                maxRange = 20;
+            return;
         }
         
-        // Use fixed range based on difficulty (no level scaling)
-        int range = maxRange;
+        // Fallback (shouldn't reach here)
+        operation = "+";
+        num1 = rand.nextInt(10) + 1;
+        num2 = rand.nextInt(10) + 1;
+        answer = num1 + num2;
 
-        switch(operation) {
-            case "+":
-                if (difficulty == DifficultySelect.Difficulty.HARD) {
-                    // Hard: larger numbers 20-100
-                    num1 = rand.nextInt(81) + 20; // 20-100
-                    num2 = rand.nextInt(81) + 20; // 20-100
-                } else {
-                    num1 = rand.nextInt(range) + 1;
-                    num2 = rand.nextInt(range) + 1;
-                }
-                answer = num1 + num2;
-                break;
-            case "-":
-                if (difficulty == DifficultySelect.Difficulty.HARD) {
-                    // Hard: larger numbers
-                    num1 = rand.nextInt(81) + 50; // 50-130
-                    num2 = rand.nextInt(num1 - 20) + 20; // 20 to (num1 - 1)
-                } else {
-                    num1 = rand.nextInt(range) + 10;
-                    num2 = rand.nextInt(num1) + 1;
-                }
-                answer = num1 - num2;
-                break;
-            case "*":
-                // For multiplication, use difficulty-based range
-                int multRange;
-                if (difficulty == DifficultySelect.Difficulty.EASY) {
-                    multRange = 10; // Easy: up to 10x10
-                } else if (difficulty == DifficultySelect.Difficulty.MEDIUM) {
-                    multRange = 12; // Medium: up to 12x12
-                } else { // HARD
-                    multRange = 20; // Hard: up to 20x20 for simple multiplications
-                }
-                num1 = rand.nextInt(multRange) + 1;
-                num2 = rand.nextInt(multRange) + 1;
-                answer = num1 * num2;
-                break;
-        }
     }
 
     public int getAnswer() {

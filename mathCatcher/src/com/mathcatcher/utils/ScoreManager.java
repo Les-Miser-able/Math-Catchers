@@ -41,6 +41,27 @@ public class ScoreManager {
     
     public static void addScore(int score, DifficultySelect.Difficulty difficulty) {
         scores.add(new ScoreEntry(score, difficulty));
+        
+        // Maintain only top 10 scores per difficulty
+        for (DifficultySelect.Difficulty diff : DifficultySelect.Difficulty.values()) {
+            List<ScoreEntry> difficultyScores = new ArrayList<>();
+            for (ScoreEntry entry : scores) {
+                if (entry.getDifficulty() == diff) {
+                    difficultyScores.add(entry);
+                }
+            }
+            
+            // Sort by score (highest first)
+            difficultyScores.sort((a, b) -> Integer.compare(b.getScore(), a.getScore()));
+            
+            // Keep only top 10
+            if (difficultyScores.size() > MAX_SCORES_PER_DIFFICULTY) {
+                // Remove excess scores from main list
+                List<ScoreEntry> toRemove = difficultyScores.subList(MAX_SCORES_PER_DIFFICULTY, difficultyScores.size());
+                scores.removeAll(toRemove);
+            }
+        }
+        
         saveScores();
     }
     

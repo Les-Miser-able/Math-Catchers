@@ -3,6 +3,7 @@ package com.mathcatcher.game;
 import com.mathcatcher.entities.Player;
 import com.mathcatcher.entities.FallingNumber;
 import com.mathcatcher.utils.MathEquation;
+import com.mathcatcher.utils.SoundManager;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
@@ -30,6 +31,13 @@ public class GamePanel extends JPanel implements ActionListener {
     private Runnable onGameOver;
     @SuppressWarnings("unused")
     private Runnable onQuitToMenu;
+    
+    // Animation variables
+    private double cloudOffset1, cloudOffset2, cloudOffset3;
+    private double treeAnimationPhase;
+    private int lifeLossAnimationTimer;
+    private boolean showingLifeLossAnimation;
+    private int previousWrongAnswersCount;
 
     public GamePanel() {
         this(DifficultySelect.Difficulty.MEDIUM); // Default to medium
@@ -112,6 +120,14 @@ public class GamePanel extends JPanel implements ActionListener {
                 }
             }
         });
+        
+        // Add mouse motion listener for hover effects
+        addMouseMotionListener(new MouseMotionAdapter() {
+            @Override
+            public void mouseMoved(MouseEvent e) {
+                repaint(); // Repaint to update hover effects
+            }
+        });
 
         // Create pause button
         createPauseButton();
@@ -123,8 +139,7 @@ public class GamePanel extends JPanel implements ActionListener {
     private void initGame() {
         player = new Player(WIDTH / 2, HEIGHT - 80);
         fallingNumbers = new ArrayList<>();
-        // Always start with Easy difficulty regardless of what was selected
-        difficulty = DifficultySelect.Difficulty.EASY;
+        // Use the difficulty that was selected (don't override it)
         currentEquation = new MathEquation(1, difficulty);
         rand = new Random();
         score = 0;
@@ -135,6 +150,15 @@ public class GamePanel extends JPanel implements ActionListener {
         wrongAnswersCount = 0;
         isPaused = false;
         isGameOver = false;
+        
+        // Initialize animation variables
+        cloudOffset1 = Math.random() * WIDTH;
+        cloudOffset2 = Math.random() * WIDTH + WIDTH;
+        cloudOffset3 = Math.random() * WIDTH + WIDTH * 2;
+        treeAnimationPhase = 0;
+        lifeLossAnimationTimer = 0;
+        showingLifeLossAnimation = false;
+        previousWrongAnswersCount = 0;
     }
 
     private void createPauseButton() {
@@ -146,8 +170,16 @@ public class GamePanel extends JPanel implements ActionListener {
             isPaused = !isPaused;
             if (isPaused) {
                 gameTimer.stop();
+                // Update all falling numbers to paused state
+                for (FallingNumber num : fallingNumbers) {
+                    num.setPaused(true);
+                }
             } else {
                 gameTimer.start();
+                // Update all falling numbers to unpaused state
+                for (FallingNumber num : fallingNumbers) {
+                    num.setPaused(false);
+                }
                 requestFocus();
             }
             repaint();
@@ -161,7 +193,32 @@ public class GamePanel extends JPanel implements ActionListener {
     }
 
     private void update() {
-        if (isPaused || isGameOver) {
+        if (isGameOver) {
+            return;
+        }
+        
+        // Update animations even when paused (for background)
+        if (!isPaused) {
+            cloudOffset1 += 0.2;
+            cloudOffset2 += 0.15;
+            cloudOffset3 += 0.25;
+            if (cloudOffset1 > WIDTH + 200) cloudOffset1 = -200;
+            if (cloudOffset2 > WIDTH + 200) cloudOffset2 = -200;
+            if (cloudOffset3 > WIDTH + 200) cloudOffset3 = -200;
+            
+            treeAnimationPhase += 0.02;
+        }
+        
+        // Update life loss animation
+        if (showingLifeLossAnimation) {
+            lifeLossAnimationTimer++;
+            if (lifeLossAnimationTimer > 60) { // 1 second at 60fps
+                showingLifeLossAnimation = false;
+                lifeLossAnimationTimer = 0;
+            }
+        }
+
+        if (isPaused) {
             return;
         }
 
@@ -197,6 +254,7 @@ public class GamePanel extends JPanel implements ActionListener {
             // Check collision
             if (num.getBounds().intersects(player.getBounds()) && !num.isCaught()) {
                 num.setCaught(true);
+                player.triggerCatchAnimation();
                 handleNumberCatch(num.getValue());
                 // Remove the caught number
                 fallingNumbers.remove(i);
@@ -225,7 +283,9 @@ public class GamePanel extends JPanel implements ActionListener {
             }
         }
 
-        fallingNumbers.add(new FallingNumber(x, 0, value, level, difficulty));
+        FallingNumber newNumber = new FallingNumber(x, 0, value, level, difficulty);
+        newNumber.setPaused(isPaused);
+        fallingNumbers.add(newNumber);
     }
 
     private void handleNumberCatch(int value) {
@@ -233,11 +293,13 @@ public class GamePanel extends JPanel implements ActionListener {
             // Correct answer: add points and increment count
             score += 10 * level;
             correctAnswersCount++;
+            SoundManager.playSound(SoundManager.SoundType.CATCH);
 
             // Level up every 50 points
             int newLevel = (score / 50) + 1;
             if (newLevel > level) {
                 level = newLevel;
+                SoundManager.playSound(SoundManager.SoundType.LEVEL_UP);
             }
 
             // Progress through difficulties based on correct answers:
@@ -262,6 +324,15 @@ public class GamePanel extends JPanel implements ActionListener {
         } else {
             // Wrong answer: increment wrong answers count
             wrongAnswersCount++;
+            SoundManager.playSound(SoundManager.SoundType.WRONG);
+            
+            // Check if life was lost
+            if (wrongAnswersCount > previousWrongAnswersCount) {
+                showingLifeLossAnimation = true;
+                lifeLossAnimationTimer = 0;
+                SoundManager.playSound(SoundManager.SoundType.LIFE_LOST);
+                previousWrongAnswersCount = wrongAnswersCount;
+            }
             
             // Game over after 3 wrong answers
             if (wrongAnswersCount >= 3) {
@@ -314,6 +385,32 @@ public class GamePanel extends JPanel implements ActionListener {
         }
 
         player.draw(g2d);
+        
+        // Draw life loss animation overlay
+        if (showingLifeLossAnimation) {
+            drawLifeLossAnimation(g2d);
+        }
+    }
+    
+    private void drawLifeLossAnimation(Graphics2D g2d) {
+        float alpha = (float)(1.0 - (lifeLossAnimationTimer / 60.0));
+        alpha = Math.max(0, Math.min(1, alpha));
+        
+        // Red flash overlay
+        g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha * 0.5f));
+        g2d.setColor(Color.RED);
+        g2d.fillRect(0, 0, WIDTH, HEIGHT);
+        g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f));
+        
+        // Pulsing "LIFE LOST" text
+        double scale = 1.0 + Math.sin(lifeLossAnimationTimer * 0.3) * 0.3;
+        g2d.setFont(new Font("Arial", Font.BOLD, (int)(48 * scale)));
+        g2d.setColor(new Color(255, 0, 0, (int)(alpha * 255)));
+        FontMetrics fm = g2d.getFontMetrics();
+        String text = "LIFE LOST!";
+        int textX = (WIDTH - fm.stringWidth(text)) / 2;
+        int textY = HEIGHT / 2;
+        g2d.drawString(text, textX, textY);
     }
 
     private void drawBackground(Graphics2D g2d) {
@@ -322,10 +419,52 @@ public class GamePanel extends JPanel implements ActionListener {
                 0, HEIGHT, new Color(176, 224, 230));
         g2d.setPaint(sky);
         g2d.fillRect(0, 0, WIDTH, HEIGHT);
+        
+        // Draw animated clouds
+        drawCloud(g2d, (int)cloudOffset1, 50, 80);
+        drawCloud(g2d, (int)cloudOffset2, 120, 60);
+        drawCloud(g2d, (int)cloudOffset3, 80, 70);
+        
+        // Draw decorative trees in background
+        drawTree(g2d, 50, HEIGHT - 50);
+        drawTree(g2d, 200, HEIGHT - 50);
+        drawTree(g2d, 600, HEIGHT - 50);
+        drawTree(g2d, 750, HEIGHT - 50);
 
-        // Ground
+        // Ground with texture
         g2d.setColor(new Color(34, 139, 34));
         g2d.fillRect(0, HEIGHT - 50, WIDTH, 50);
+        
+        // Ground highlight
+        g2d.setColor(new Color(46, 160, 46));
+        g2d.fillRect(0, HEIGHT - 50, WIDTH, 5);
+        
+        // Draw grass details
+        g2d.setColor(new Color(22, 120, 22));
+        for (int i = 0; i < WIDTH; i += 20) {
+            int grassHeight = 3 + (int)(Math.sin(i * 0.1 + treeAnimationPhase) * 2);
+            g2d.fillRect(i, HEIGHT - 50 - grassHeight, 2, grassHeight);
+        }
+    }
+    
+    private void drawCloud(Graphics2D g2d, int x, int y, int size) {
+        g2d.setColor(new Color(255, 255, 255, 200));
+        g2d.fillOval(x, y, size, size * 2 / 3);
+        g2d.fillOval(x + size / 3, y - size / 4, size * 2 / 3, size * 2 / 3);
+        g2d.fillOval(x + size * 2 / 3, y, size * 2 / 3, size * 2 / 3);
+    }
+    
+    private void drawTree(Graphics2D g2d, int x, int y) {
+        // Tree trunk
+        g2d.setColor(new Color(101, 67, 33));
+        g2d.fillRect(x, y - 40, 15, 40);
+        
+        // Tree leaves (animated sway)
+        double sway = Math.sin(treeAnimationPhase + x * 0.1) * 2;
+        g2d.setColor(new Color(34, 120, 34));
+        g2d.fillOval(x - 20 + (int)sway, y - 60, 55, 50);
+        g2d.setColor(new Color(40, 140, 40));
+        g2d.fillOval(x - 15 + (int)sway, y - 55, 45, 40);
     }
 
     private void drawUI(Graphics2D g2d) {
@@ -426,10 +565,38 @@ public class GamePanel extends JPanel implements ActionListener {
         int btnY = 20;
         int btnWidth = 100;
         int btnHeight = 40;
+        
+        // Check if mouse is over button (for hover effect)
+        Point mousePos = getMousePosition();
+        boolean isHovered = false;
+        if (mousePos != null) {
+            isHovered = mousePos.x >= btnX && mousePos.x <= btnX + btnWidth &&
+                       mousePos.y >= btnY && mousePos.y <= btnY + btnHeight;
+        }
 
-        // Button background
-        g2d.setColor(new Color(100, 116, 139, 200));
+        // Button background with gradient
+        if (isHovered) {
+            GradientPaint gradient = new GradientPaint(
+                btnX, btnY, new Color(120, 136, 159, 240),
+                btnX, btnY + btnHeight, new Color(80, 96, 119, 240)
+            );
+            g2d.setPaint(gradient);
+        } else {
+            g2d.setColor(new Color(100, 116, 139, 200));
+        }
         g2d.fillRoundRect(btnX, btnY, btnWidth, btnHeight, 8, 8);
+        
+        // Glow effect on hover
+        if (isHovered) {
+            for (int i = 1; i <= 3; i++) {
+                g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.2f / i));
+                g2d.setColor(new Color(100, 116, 139));
+                g2d.setStroke(new BasicStroke(2 * i));
+                g2d.drawRoundRect(btnX - i, btnY - i, btnWidth + 2 * i, btnHeight + 2 * i, 8, 8);
+            }
+            g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f));
+        }
+        
         g2d.setColor(new Color(255, 255, 255, 100));
         g2d.setStroke(new BasicStroke(2));
         g2d.drawRoundRect(btnX, btnY, btnWidth, btnHeight, 8, 8);
@@ -473,9 +640,40 @@ public class GamePanel extends JPanel implements ActionListener {
         int btnHeight = 45;
         int btnSpacing = 55;
 
-        // Resume button
-        g2d.setColor(new Color(34, 197, 94, 200));
+        // Check mouse position for hover effects
+        Point mousePos = getMousePosition();
+        boolean resumeHovered = false;
+        boolean quitHovered = false;
+        if (mousePos != null) {
+            resumeHovered = mousePos.x >= menuX + 25 && mousePos.x <= menuX + menuWidth - 25 &&
+                           mousePos.y >= btnY && mousePos.y <= btnY + btnHeight;
+            quitHovered = mousePos.x >= menuX + 25 && mousePos.x <= menuX + menuWidth - 25 &&
+                         mousePos.y >= btnY + btnSpacing && mousePos.y <= btnY + btnSpacing + btnHeight;
+        }
+        
+        // Resume button with gradient and hover
+        if (resumeHovered) {
+            GradientPaint resumeGradient = new GradientPaint(
+                menuX + 25, btnY, new Color(34, 217, 114),
+                menuX + 25, btnY + btnHeight, new Color(5, 170, 125)
+            );
+            g2d.setPaint(resumeGradient);
+        } else {
+            g2d.setColor(new Color(34, 197, 94, 200));
+        }
         g2d.fillRoundRect(menuX + 25, btnY, menuWidth - 50, btnHeight, 10, 10);
+        
+        // Glow effect on hover
+        if (resumeHovered) {
+            for (int i = 1; i <= 2; i++) {
+                g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.3f / i));
+                g2d.setColor(new Color(34, 197, 94));
+                g2d.setStroke(new BasicStroke(2 * i));
+                g2d.drawRoundRect(menuX + 25 - i, btnY - i, menuWidth - 50 + 2 * i, btnHeight + 2 * i, 10, 10);
+            }
+            g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f));
+        }
+        
         g2d.setColor(new Color(255, 255, 255, 100));
         g2d.setStroke(new BasicStroke(2));
         g2d.drawRoundRect(menuX + 25, btnY, menuWidth - 50, btnHeight, 10, 10);
@@ -486,9 +684,29 @@ public class GamePanel extends JPanel implements ActionListener {
         int resumeWidth = btnFm.stringWidth(resumeText);
         g2d.drawString(resumeText, menuX + (menuWidth - resumeWidth) / 2, btnY + 30);
 
-        // Quit button
-        g2d.setColor(new Color(239, 68, 68, 200));
+        // Quit button with gradient and hover
+        if (quitHovered) {
+            GradientPaint quitGradient = new GradientPaint(
+                menuX + 25, btnY + btnSpacing, new Color(239, 88, 88),
+                menuX + 25, btnY + btnSpacing + btnHeight, new Color(219, 59, 139)
+            );
+            g2d.setPaint(quitGradient);
+        } else {
+            g2d.setColor(new Color(239, 68, 68, 200));
+        }
         g2d.fillRoundRect(menuX + 25, btnY + btnSpacing, menuWidth - 50, btnHeight, 10, 10);
+        
+        // Glow effect on hover
+        if (quitHovered) {
+            for (int i = 1; i <= 2; i++) {
+                g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.3f / i));
+                g2d.setColor(new Color(239, 68, 68));
+                g2d.setStroke(new BasicStroke(2 * i));
+                g2d.drawRoundRect(menuX + 25 - i, btnY + btnSpacing - i, menuWidth - 50 + 2 * i, btnHeight + 2 * i, 10, 10);
+            }
+            g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f));
+        }
+        
         g2d.setColor(new Color(255, 255, 255, 100));
         g2d.drawRoundRect(menuX + 25, btnY + btnSpacing, menuWidth - 50, btnHeight, 10, 10);
         String quitText = "Quit to Menu";

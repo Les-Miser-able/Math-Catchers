@@ -10,6 +10,8 @@ public class LeaderboardPanel extends JPanel {
     private DifficultySelect.Difficulty selectedDifficulty;
     private JPanel scoresPanel;
     private JPanel container;
+    private JPanel titlePanel;
+    private JScrollPane scrollPane;
 
     public LeaderboardPanel(Runnable onBack) {
         this.selectedDifficulty = DifficultySelect.Difficulty.EASY;
@@ -49,7 +51,7 @@ public class LeaderboardPanel extends JPanel {
         backButton.addActionListener(e -> onBack.run());
 
         // ===== Title Section =====
-        JPanel titlePanel = new JPanel() {
+        titlePanel = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
@@ -91,11 +93,13 @@ public class LeaderboardPanel extends JPanel {
                 g2d.setPaint(gradient);
                 g2d.fill(textShape);
 
-                // Draw subtitle "Top 10"
+                // Draw subtitle with current difficulty
                 Font subtitleFont = new Font("SansSerif", Font.PLAIN, 16);
                 g2d.setFont(subtitleFont);
                 g2d.setColor(new Color(209, 213, 219)); // gray-300
-                String subtitle = "Top 10";
+                String difficultyName = selectedDifficulty.name().substring(0, 1) + 
+                                       selectedDifficulty.name().substring(1).toLowerCase();
+                String subtitle = "Top 10 - " + difficultyName + " Difficulty";
                 FontMetrics subFm = g2d.getFontMetrics();
                 int subX = (getWidth() - subFm.stringWidth(subtitle)) / 2;
                 int subY = y + 25;
@@ -108,28 +112,38 @@ public class LeaderboardPanel extends JPanel {
         titlePanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 32, 0));
 
         // ===== Difficulty Filter Buttons =====
-        JPanel filterPanel = new JPanel(new GridLayout(1, 3, 8, 0));
-        filterPanel.setOpaque(false);
-        filterPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 24, 0));
+        JPanel filterPanel = new JPanel(new GridLayout(1, 3, 12, 0));
+        filterPanel.setOpaque(true); // Make it opaque so we can see it
+        filterPanel.setBackground(new Color(0, 0, 0, 0)); // Transparent but opaque
+        filterPanel.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
+        filterPanel.setPreferredSize(new Dimension(Integer.MAX_VALUE, 70));
+        filterPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 70));
+        filterPanel.setMinimumSize(new Dimension(0, 70));
 
-        DifficultyFilterButton easyButton = new DifficultyFilterButton("Easy", 
-            selectedDifficulty == DifficultySelect.Difficulty.EASY);
+        DifficultyFilterButton easyButton = new DifficultyFilterButton("⚡ Easy", 
+            selectedDifficulty == DifficultySelect.Difficulty.EASY,
+            new Color(34, 197, 94), new Color(5, 150, 105), // green-500 to emerald-600
+            new Color(22, 163, 74), new Color(5, 122, 85)); // hover colors
         easyButton.addActionListener(e -> {
             selectedDifficulty = DifficultySelect.Difficulty.EASY;
             updateDifficultyButtons(filterPanel);
             refreshScores();
         });
 
-        DifficultyFilterButton mediumButton = new DifficultyFilterButton("Medium",
-            selectedDifficulty == DifficultySelect.Difficulty.MEDIUM);
+        DifficultyFilterButton mediumButton = new DifficultyFilterButton("🔥 Medium",
+            selectedDifficulty == DifficultySelect.Difficulty.MEDIUM,
+            new Color(234, 179, 8), new Color(234, 88, 12), // yellow-500 to orange-600
+            new Color(202, 138, 4), new Color(194, 65, 12)); // hover colors
         mediumButton.addActionListener(e -> {
             selectedDifficulty = DifficultySelect.Difficulty.MEDIUM;
             updateDifficultyButtons(filterPanel);
             refreshScores();
         });
 
-        DifficultyFilterButton hardButton = new DifficultyFilterButton("Hard",
-            selectedDifficulty == DifficultySelect.Difficulty.HARD);
+        DifficultyFilterButton hardButton = new DifficultyFilterButton("☠ Hard",
+            selectedDifficulty == DifficultySelect.Difficulty.HARD,
+            new Color(239, 68, 68), new Color(219, 39, 119), // red-500 to pink-600
+            new Color(220, 38, 38), new Color(190, 24, 93)); // hover colors
         hardButton.addActionListener(e -> {
             selectedDifficulty = DifficultySelect.Difficulty.HARD;
             updateDifficultyButtons(filterPanel);
@@ -144,16 +158,20 @@ public class LeaderboardPanel extends JPanel {
         scoresPanel = new JPanel();
         scoresPanel.setLayout(new BoxLayout(scoresPanel, BoxLayout.Y_AXIS));
         scoresPanel.setOpaque(false);
+        scoresPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        JScrollPane scrollPane = new JScrollPane(scoresPanel);
+        scrollPane = new JScrollPane(scoresPanel);
         scrollPane.setOpaque(false);
         scrollPane.getViewport().setOpaque(false);
         scrollPane.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
+        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16); // Smooth scrolling
         scrollPane.getVerticalScrollBar().setUI(new javax.swing.plaf.basic.BasicScrollBarUI() {
             @Override
             protected void configureScrollBarColors() {
-                this.thumbColor = new Color(255, 255, 255, 100);
-                this.trackColor = new Color(0, 0, 0, 0);
+                this.thumbColor = new Color(255, 255, 255, 150);
+                this.trackColor = new Color(0, 0, 0, 50);
             }
             
             @Override
@@ -166,6 +184,27 @@ public class LeaderboardPanel extends JPanel {
                 return createZeroButton();
             }
             
+            @Override
+            protected void paintThumb(Graphics g, JComponent c, Rectangle thumbBounds) {
+                if (thumbBounds.isEmpty() || !scrollbar.isEnabled()) {
+                    return;
+                }
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(thumbColor);
+                g2.fillRoundRect(thumbBounds.x, thumbBounds.y, thumbBounds.width, thumbBounds.height, 5, 5);
+                g2.dispose();
+            }
+            
+            @Override
+            protected void paintTrack(Graphics g, JComponent c, Rectangle trackBounds) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(trackColor);
+                g2.fillRoundRect(trackBounds.x, trackBounds.y, trackBounds.width, trackBounds.height, 5, 5);
+                g2.dispose();
+            }
+            
             private JButton createZeroButton() {
                 JButton button = new JButton();
                 button.setPreferredSize(new Dimension(0, 0));
@@ -175,10 +214,10 @@ public class LeaderboardPanel extends JPanel {
             }
         });
 
-        // Add components to container
+        // Add components to container using BoxLayout for better control
         JPanel topPanel = new JPanel(new BorderLayout());
         topPanel.setOpaque(false);
-        topPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 32, 0));
+        topPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0));
         // Wrap back button in a panel to prevent stretching
         JPanel backButtonWrapper = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         backButtonWrapper.setOpaque(false);
@@ -186,8 +225,20 @@ public class LeaderboardPanel extends JPanel {
         topPanel.add(backButtonWrapper, BorderLayout.WEST);
         topPanel.add(titlePanel, BorderLayout.CENTER);
 
+        // Use BorderLayout with proper constraints
         container.add(topPanel, BorderLayout.NORTH);
-        container.add(filterPanel, BorderLayout.CENTER);
+        
+        // Add filter buttons in center with explicit height
+        JPanel filterContainer = new JPanel(new BorderLayout());
+        filterContainer.setOpaque(false);
+        filterContainer.add(filterPanel, BorderLayout.CENTER);
+        filterContainer.setPreferredSize(new Dimension(0, 70));
+        filterContainer.setMaximumSize(new Dimension(Integer.MAX_VALUE, 70));
+        container.add(filterContainer, BorderLayout.CENTER);
+        
+        // Add scroll pane at bottom with proper sizing
+        scrollPane.setPreferredSize(new Dimension(0, 300)); // Give it a reasonable default height
+        scrollPane.setMinimumSize(new Dimension(0, 200));
         container.add(scrollPane, BorderLayout.SOUTH);
 
         // Add container to main panel
@@ -211,6 +262,11 @@ public class LeaderboardPanel extends JPanel {
     private void refreshScores() {
         scoresPanel.removeAll();
         
+        // Repaint title panel to update difficulty in subtitle
+        if (titlePanel != null) {
+            titlePanel.repaint();
+        }
+        
         List<ScoreManager.ScoreEntry> scores = ScoreManager.getLeaderboard(selectedDifficulty);
         
         if (scores.isEmpty()) {
@@ -225,7 +281,9 @@ public class LeaderboardPanel extends JPanel {
             trophyIcon.setAlignmentX(Component.CENTER_ALIGNMENT);
             trophyIcon.setForeground(new Color(255, 255, 255, 51)); // opacity-20
             
-            JLabel emptyText = new JLabel("No scores yet. Be the first to play!");
+            String difficultyName = selectedDifficulty.name().substring(0, 1) + 
+                                   selectedDifficulty.name().substring(1).toLowerCase();
+            JLabel emptyText = new JLabel("No " + difficultyName + " difficulty scores yet. Be the first!");
             emptyText.setFont(new Font("SansSerif", Font.PLAIN, 16));
             emptyText.setForeground(new Color(156, 163, 175)); // gray-400
             emptyText.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -235,33 +293,65 @@ public class LeaderboardPanel extends JPanel {
             emptyPanel.add(emptyText);
             scoresPanel.add(emptyPanel);
         } else {
-            // Score entries
+            // Score entries (limited to top 10 by ScoreManager)
             for (int i = 0; i < scores.size(); i++) {
                 ScoreManager.ScoreEntry entry = scores.get(i);
                 ScoreEntryPanel entryPanel = new ScoreEntryPanel(entry, i);
+                entryPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+                entryPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 75));
                 scoresPanel.add(entryPanel);
-                scoresPanel.add(Box.createVerticalStrut(16)); // More spacing between entries
+                if (i < scores.size() - 1) { // Don't add spacing after last item
+                    scoresPanel.add(Box.createVerticalStrut(12));
+                }
             }
         }
         
+        // Ensure scroll pane updates
         scoresPanel.revalidate();
         scoresPanel.repaint();
+        scrollPane.getViewport().revalidate();
+        scrollPane.getViewport().repaint();
+        
+        // Scroll to top when switching difficulties
+        scrollPane.getViewport().setViewPosition(new java.awt.Point(0, 0));
     }
 
-    // Difficulty filter button
+    // Difficulty filter button with enhanced styling
     private static class DifficultyFilterButton extends JButton {
         private boolean isSelected;
+        private boolean isHovered;
+        private Color color1, color2;
+        private Color hoverColor1, hoverColor2;
 
-        public DifficultyFilterButton(String text, boolean selected) {
+        public DifficultyFilterButton(String text, boolean selected, Color c1, Color c2, Color h1, Color h2) {
             super(text);
             this.isSelected = selected;
+            this.color1 = c1;
+            this.color2 = c2;
+            this.hoverColor1 = h1;
+            this.hoverColor2 = h2;
             setFocusPainted(false);
             setContentAreaFilled(false);
             setBorderPainted(false);
-            setFont(new Font("SansSerif", Font.BOLD, 14)); // Smaller font
-            setPreferredSize(new Dimension(0, 40)); // Smaller filter buttons
-            setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
-            setMinimumSize(new Dimension(0, 40));
+            setOpaque(false);
+            setFont(new Font("SansSerif", Font.BOLD, 16));
+            setPreferredSize(new Dimension(200, 50));
+            setMaximumSize(new Dimension(Integer.MAX_VALUE, 50));
+            setMinimumSize(new Dimension(100, 50));
+            
+            addMouseListener(new java.awt.event.MouseAdapter() {
+                @Override
+                public void mouseEntered(java.awt.event.MouseEvent e) {
+                    isHovered = true;
+                    repaint();
+                }
+
+                @Override
+                public void mouseExited(java.awt.event.MouseEvent e) {
+                    isHovered = false;
+                    repaint();
+                }
+            });
         }
 
         public void setSelected(boolean selected) {
@@ -271,6 +361,7 @@ public class LeaderboardPanel extends JPanel {
 
         @Override
         protected void paintComponent(Graphics g) {
+            super.paintComponent(g); // Important: call super to ensure proper rendering
             Graphics2D g2d = (Graphics2D) g;
             g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
@@ -278,21 +369,57 @@ public class LeaderboardPanel extends JPanel {
 
             int width = getWidth();
             int height = getHeight();
+            
+            // Ensure we have valid dimensions
+            if (width <= 0 || height <= 0) {
+                return;
+            }
 
             if (isSelected) {
-                // Selected: gradient purple to pink
+                // Selected: use difficulty-specific gradient
                 GradientPaint gradient = new GradientPaint(
-                    0, 0, new Color(168, 85, 247), // purple-500
-                    width, height, new Color(219, 39, 119) // pink-600
+                    0, 0, color1,
+                    width, height, color2
                 );
                 g2d.setPaint(gradient);
-                g2d.fillRoundRect(0, 0, width, height, 12, 12); // Smaller rounded corners
+                g2d.fillRoundRect(0, 0, width, height, 12, 12);
+                
+                // Glow effect for selected button
+                for (int i = 1; i <= 2; i++) {
+                    g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.3f / i));
+                    g2d.setColor(color1);
+                    g2d.setStroke(new BasicStroke(2 * i));
+                    g2d.drawRoundRect(i, i, width - 2 * i, height - 2 * i, 12, 12);
+                }
+                g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f));
+                
+                // Border
+                g2d.setStroke(new BasicStroke(2));
+                g2d.setColor(new Color(255, 255, 255, 100));
+                g2d.drawRoundRect(0, 0, width - 1, height - 1, 12, 12);
+                
                 g2d.setColor(Color.WHITE);
             } else {
-                // Not selected: white/10 background
-                g2d.setColor(new Color(255, 255, 255, 25));
-                g2d.fillRoundRect(0, 0, width, height, 12, 12); // Smaller rounded corners
-                g2d.setColor(new Color(209, 213, 219)); // gray-300
+                // Not selected: visible background with border
+                if (isHovered) {
+                    // Hover effect - use lighter version of difficulty colors
+                    GradientPaint hoverGradient = new GradientPaint(
+                        0, 0, new Color(hoverColor1.getRed(), hoverColor1.getGreen(), hoverColor1.getBlue(), 150),
+                        width, height, new Color(hoverColor2.getRed(), hoverColor2.getGreen(), hoverColor2.getBlue(), 150)
+                    );
+                    g2d.setPaint(hoverGradient);
+                    g2d.fillRoundRect(0, 0, width, height, 12, 12);
+                    g2d.setColor(Color.WHITE);
+                } else {
+                    // Unselected: visible gray background with border
+                    g2d.setColor(new Color(255, 255, 255, 60)); // More visible
+                    g2d.fillRoundRect(0, 0, width, height, 12, 12);
+                    // Border to make it more visible
+                    g2d.setStroke(new BasicStroke(1));
+                    g2d.setColor(new Color(255, 255, 255, 80));
+                    g2d.drawRoundRect(0, 0, width - 1, height - 1, 12, 12);
+                    g2d.setColor(new Color(209, 213, 219)); // gray-300
+                }
             }
 
             // Draw text
@@ -401,22 +528,22 @@ public class LeaderboardPanel extends JPanel {
             int timeY = iconY + fm.getAscent() + 4;
             g2d.drawString(timeStr, textX, timeY);
 
-            // Score and difficulty - larger
-            int scoreX = width - 140;
+            // Score - larger (no need to show difficulty since we filter by it)
+            int scoreX = width - 20;
             g2d.setFont(new Font("SansSerif", Font.BOLD, 28)); // Larger score
             g2d.setColor(new Color(251, 191, 36)); // yellow-400
             fm = g2d.getFontMetrics();
             String scoreStr = String.valueOf(entry.getScore());
             int scoreTextX = scoreX - fm.stringWidth(scoreStr);
             g2d.drawString(scoreStr, scoreTextX, dateY);
-
-            g2d.setFont(new Font("SansSerif", Font.PLAIN, 14)); // Larger difficulty text
+            
+            // Points label
+            g2d.setFont(new Font("SansSerif", Font.PLAIN, 12)); 
             g2d.setColor(new Color(156, 163, 175)); // gray-400
             fm = g2d.getFontMetrics();
-            String diffStr = entry.getDifficulty().name().toLowerCase();
-            diffStr = diffStr.substring(0, 1).toUpperCase() + diffStr.substring(1);
-            int diffTextX = scoreX - fm.stringWidth(diffStr);
-            g2d.drawString(diffStr, diffTextX, timeY);
+            String pointsStr = "points";
+            int pointsTextX = scoreX - fm.stringWidth(pointsStr);
+            g2d.drawString(pointsStr, pointsTextX, timeY);
         }
     }
 

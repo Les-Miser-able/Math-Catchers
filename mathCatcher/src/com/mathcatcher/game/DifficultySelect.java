@@ -115,7 +115,7 @@ public class DifficultySelect extends JPanel {
         // Easy Difficulty
         DifficultyButton easyButton = new DifficultyButton(
             "⚡ Easy",
-            "Addition & subtraction (1-10)",
+            "Addition & subtraction only (1-10)",
             new Color(34, 197, 94), new Color(5, 150, 105), // green-500 to emerald-600
             new Color(22, 163, 74), new Color(5, 122, 85)  // hover colors
         );
@@ -124,7 +124,7 @@ public class DifficultySelect extends JPanel {
         // Medium Difficulty
         DifficultyButton mediumButton = new DifficultyButton(
             "🔥 Medium",
-            "Includes multiplication (1-20)",
+            "Addition, subtraction, multiplication & division (1-20)",
             new Color(234, 179, 8), new Color(234, 88, 12), // yellow-500 to orange-600
             new Color(202, 138, 4), new Color(194, 65, 12)  // hover colors
         );
@@ -133,7 +133,7 @@ public class DifficultySelect extends JPanel {
         // Hard Difficulty
         DifficultyButton hardButton = new DifficultyButton(
             "☠ Hard",
-            "All operations, faster speed (1-30)",
+            "All operations + complex equations, faster falling (1-100)",
             new Color(239, 68, 68), new Color(219, 39, 119), // red-500 to pink-600
             new Color(220, 38, 38), new Color(190, 24, 93)  // hover colors
         );
@@ -173,8 +173,10 @@ public class DifficultySelect extends JPanel {
         private Color color1, color2;
         private Color hoverColor1, hoverColor2;
         private boolean isHovered = false;
+        private float hoverProgress = 0.0f;
         private String name;
         private String description;
+        private Timer animationTimer;
 
         public DifficultyButton(String name, String description, Color c1, Color c2, Color h1, Color h2) {
             super();
@@ -191,18 +193,35 @@ public class DifficultySelect extends JPanel {
             setPreferredSize(new Dimension(0, 70)); // Slightly taller to fit description
             setMaximumSize(new Dimension(Integer.MAX_VALUE, 70));
             setMinimumSize(new Dimension(0, 70));
+            
+            // Smooth animation timer
+            animationTimer = new Timer(16, e -> {
+                if (isHovered && hoverProgress < 1.0f) {
+                    hoverProgress = Math.min(1.0f, hoverProgress + 0.1f);
+                    repaint();
+                } else if (!isHovered && hoverProgress > 0.0f) {
+                    hoverProgress = Math.max(0.0f, hoverProgress - 0.1f);
+                    repaint();
+                } else if ((isHovered && hoverProgress >= 1.0f) || (!isHovered && hoverProgress <= 0.0f)) {
+                    ((Timer)e.getSource()).stop();
+                }
+            });
 
             addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseEntered(MouseEvent e) {
                     isHovered = true;
-                    repaint();
+                    if (!animationTimer.isRunning()) {
+                        animationTimer.start();
+                    }
                 }
 
                 @Override
                 public void mouseExited(MouseEvent e) {
                     isHovered = false;
-                    repaint();
+                    if (!animationTimer.isRunning()) {
+                        animationTimer.start();
+                    }
                 }
             });
         }
@@ -217,9 +236,10 @@ public class DifficultySelect extends JPanel {
             int width = getWidth();
             int height = getHeight();
 
-            // Draw gradient background
-            Color c1 = isHovered ? hoverColor1 : this.color1;
-            Color c2 = isHovered ? hoverColor2 : this.color2;
+            // Interpolate colors for smooth transition
+            Color c1 = interpolateColor(this.color1, hoverColor1, hoverProgress);
+            Color c2 = interpolateColor(this.color2, hoverColor2, hoverProgress);
+            
             GradientPaint gradient = new GradientPaint(
                 0, 0, c1,
                 width, height, c2
@@ -227,11 +247,11 @@ public class DifficultySelect extends JPanel {
             g2d.setPaint(gradient);
             g2d.fillRoundRect(0, 0, width, height, 12, 12); // Same rounded corners as main menu
 
-            // Draw shadow/glow on hover
-            if (isHovered) {
-                // Simple glow effect
+            // Draw shadow/glow on hover with smooth animation
+            if (hoverProgress > 0) {
+                float glowIntensity = hoverProgress;
                 for (int i = 1; i <= 2; i++) {
-                    g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.2f / i));
+                    g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, (0.2f * glowIntensity) / i));
                     g2d.setStroke(new BasicStroke(2 * i));
                     g2d.setColor(c1);
                     g2d.drawRoundRect(i, i, width - 2 * i, height - 2 * i, 12, 12);
@@ -275,6 +295,13 @@ public class DifficultySelect extends JPanel {
             FontMetrics descFm = g2d.getFontMetrics();
             int descY = textY + descFm.getAscent() + 4;
             g2d.drawString(description, textX, descY);
+        }
+        
+        private Color interpolateColor(Color c1, Color c2, float t) {
+            int r = (int)(c1.getRed() + (c2.getRed() - c1.getRed()) * t);
+            int g = (int)(c1.getGreen() + (c2.getGreen() - c1.getGreen()) * t);
+            int b = (int)(c1.getBlue() + (c2.getBlue() - c1.getBlue()) * t);
+            return new Color(r, g, b);
         }
     }
 

@@ -151,11 +151,13 @@ public class MainMenu extends JPanel {
         add(container, BorderLayout.CENTER);
     }
 
-    // Custom gradient button with hover effects
+    // Custom gradient button with hover effects and smooth animations
     private static class GradientButton extends JButton {
         private Color color1, color2;
         private Color hoverColor1, hoverColor2;
         private boolean isHovered = false;
+        private float hoverProgress = 0.0f;
+        private Timer animationTimer;
 
         public GradientButton(String text, Color c1, Color c2, Color h1, Color h2) {
             super(text);
@@ -172,18 +174,35 @@ public class MainMenu extends JPanel {
             setPreferredSize(new Dimension(0, 55)); // Normal button height
             setMaximumSize(new Dimension(Integer.MAX_VALUE, 55));
             setMinimumSize(new Dimension(0, 55));
+            
+            // Smooth animation timer
+            animationTimer = new Timer(16, e -> {
+                if (isHovered && hoverProgress < 1.0f) {
+                    hoverProgress = Math.min(1.0f, hoverProgress + 0.1f);
+                    repaint();
+                } else if (!isHovered && hoverProgress > 0.0f) {
+                    hoverProgress = Math.max(0.0f, hoverProgress - 0.1f);
+                    repaint();
+                } else if ((isHovered && hoverProgress >= 1.0f) || (!isHovered && hoverProgress <= 0.0f)) {
+                    ((Timer)e.getSource()).stop();
+                }
+            });
 
             addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseEntered(MouseEvent e) {
                     isHovered = true;
-                    repaint();
+                    if (!animationTimer.isRunning()) {
+                        animationTimer.start();
+                    }
                 }
 
                 @Override
                 public void mouseExited(MouseEvent e) {
                     isHovered = false;
-                    repaint();
+                    if (!animationTimer.isRunning()) {
+                        animationTimer.start();
+                    }
                 }
             });
         }
@@ -197,9 +216,10 @@ public class MainMenu extends JPanel {
             int width = getWidth();
             int height = getHeight();
             
-            // Draw gradient background
-            Color c1 = isHovered ? hoverColor1 : color1;
-            Color c2 = isHovered ? hoverColor2 : color2;
+            // Interpolate colors for smooth transition
+            Color c1 = interpolateColor(color1, hoverColor1, hoverProgress);
+            Color c2 = interpolateColor(color2, hoverColor2, hoverProgress);
+            
             GradientPaint gradient = new GradientPaint(
                 0, 0, c1,
                 width, height, c2
@@ -207,11 +227,11 @@ public class MainMenu extends JPanel {
             g2d.setPaint(gradient);
             g2d.fillRoundRect(0, 0, width, height, 12, 12); // Normal rounded corners
 
-            // Draw shadow/glow on hover
-            if (isHovered) {
-                // Simple glow effect
+            // Draw shadow/glow on hover with smooth animation
+            if (hoverProgress > 0) {
+                float glowIntensity = hoverProgress;
                 for (int i = 1; i <= 2; i++) {
-                    g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.2f / i));
+                    g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, (0.2f * glowIntensity) / i));
                     g2d.setStroke(new BasicStroke(2 * i));
                     g2d.setColor(c1);
                     g2d.drawRoundRect(i, i, width - 2 * i, height - 2 * i, 12, 12);
@@ -228,6 +248,13 @@ public class MainMenu extends JPanel {
             int textX = (width - fm.stringWidth(text)) / 2;
             int textY = (height - fm.getHeight()) / 2 + fm.getAscent();
             g2d.drawString(text, textX, textY);
+        }
+        
+        private Color interpolateColor(Color c1, Color c2, float t) {
+            int r = (int)(c1.getRed() + (c2.getRed() - c1.getRed()) * t);
+            int g = (int)(c1.getGreen() + (c2.getGreen() - c1.getGreen()) * t);
+            int b = (int)(c1.getBlue() + (c2.getBlue() - c1.getBlue()) * t);
+            return new Color(r, g, b);
         }
     }
 }
