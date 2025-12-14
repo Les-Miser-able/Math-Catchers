@@ -7,7 +7,7 @@ import java.awt.event.MouseEvent;
 
 public class MainMenu extends JPanel {
 
-    public MainMenu(Runnable onStartGame, Runnable onQuitGame, Runnable onViewLeaderboard) {
+    public MainMenu(Runnable onStartGame, Runnable onQuitGame, Runnable onViewLeaderboard, Runnable onSettings) {
         setLayout(new BorderLayout());
         setOpaque(false);
         setBorder(BorderFactory.createEmptyBorder(30, 40, 70, 40)); // More bottom padding to avoid green ground
@@ -115,6 +115,12 @@ public class MainMenu extends JPanel {
             new Color(202, 138, 4), new Color(194, 65, 12)); // hover colors
         leaderboardButton.addActionListener(e -> onViewLeaderboard.run());
 
+        // Settings Button
+        GradientButton settingsButton = new GradientButton("⚙ Settings",
+            new Color(59, 130, 246), new Color(37, 99, 235), // blue-500 to blue-600
+            new Color(29, 78, 216), new Color(30, 64, 175)); // hover colors
+        settingsButton.addActionListener(e -> onSettings.run());
+
         // Quit Game Button
         GradientButton quitButton = new GradientButton("✖ Quit Game",
             new Color(239, 68, 68), new Color(219, 39, 119), // red-500 to pink-600
@@ -124,6 +130,8 @@ public class MainMenu extends JPanel {
         buttonPanel.add(startButton);
         buttonPanel.add(Box.createVerticalStrut(12)); // Normal spacing
         buttonPanel.add(leaderboardButton);
+        buttonPanel.add(Box.createVerticalStrut(12));
+        buttonPanel.add(settingsButton);
         buttonPanel.add(Box.createVerticalStrut(12));
         buttonPanel.add(quitButton);
 
