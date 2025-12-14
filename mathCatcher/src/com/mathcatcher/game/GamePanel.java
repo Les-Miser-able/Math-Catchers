@@ -3,6 +3,7 @@ package com.mathcatcher.game;
 import com.mathcatcher.entities.Player;
 import com.mathcatcher.entities.FallingNumber;
 import com.mathcatcher.utils.MathEquation;
+import com.mathcatcher.utils.ResolutionManager;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
@@ -12,6 +13,24 @@ import java.util.Random;
 public class GamePanel extends JPanel implements ActionListener {
     public static final int WIDTH = 800;
     public static final int HEIGHT = 600;
+
+    // Dynamic width and height based on current resolution
+    private int getGameWidth() {
+        return (int) ResolutionManager.getCurrentResolution().getWidth();
+    }
+
+    private int getGameHeight() {
+        return (int) ResolutionManager.getCurrentResolution().getHeight();
+    }
+
+    // Get scale factor for positioning and sizing
+    private double getScaleX() {
+        return ResolutionManager.getScaleX();
+    }
+
+    private double getScaleY() {
+        return ResolutionManager.getScaleY();
+    }
 
     private Player player;
     private ArrayList<FallingNumber> fallingNumbers;
@@ -44,7 +63,7 @@ public class GamePanel extends JPanel implements ActionListener {
     }
 
     public GamePanel(DifficultySelect.Difficulty difficulty, Runnable onGameOver, Runnable onQuitToMenu) {
-        setPreferredSize(new Dimension(WIDTH, HEIGHT));
+        setPreferredSize(ResolutionManager.getCurrentResolution());
         setBackground(new Color(135, 206, 250));
         setFocusable(true);
         this.difficulty = difficulty;
@@ -77,7 +96,7 @@ public class GamePanel extends JPanel implements ActionListener {
                 if (isGameOver) return;
 
                 // Pause button click
-                int btnX = WIDTH - 120;
+                int btnX = getGameWidth() - 120;
                 int btnY = 20;
                 int btnWidth = 100;
                 int btnHeight = 40;
@@ -90,8 +109,8 @@ public class GamePanel extends JPanel implements ActionListener {
 
                 // Pause menu button clicks
                 if (isPaused) {
-                    int menuX = WIDTH / 2 - 150;
-                    int menuY = HEIGHT / 2 - 150;
+                    int menuX = getGameWidth() / 2 - 150;
+                    int menuY = getGameHeight() / 2 - 150;
                     int menuWidth = 300;
                     int btnY2 = menuY + 90;
                     int btnHeight2 = 45;
@@ -121,7 +140,8 @@ public class GamePanel extends JPanel implements ActionListener {
     }
 
     private void initGame() {
-        player = new Player(WIDTH / 2, HEIGHT - 80);
+        player = new Player(getGameWidth() / 2, getGameHeight() - 80);
+        player.setScreenWidth(getGameWidth());
         fallingNumbers = new ArrayList<>();
         // Always start with Easy difficulty regardless of what was selected
         difficulty = DifficultySelect.Difficulty.EASY;
@@ -204,14 +224,14 @@ public class GamePanel extends JPanel implements ActionListener {
             }
 
             // Remove off-screen numbers (only if they're not caught)
-            if (num.isOffScreen(HEIGHT)) {
+            if (num.isOffScreen(getGameHeight())) {
                 fallingNumbers.remove(i);
             }
         }
     }
 
     private void spawnNumber() {
-        int x = rand.nextInt(WIDTH - 50);
+        int x = rand.nextInt(getGameWidth() - 50);
         int value;
 
         // 40% chance correct answer, 60% random numbers
@@ -319,29 +339,29 @@ public class GamePanel extends JPanel implements ActionListener {
     private void drawBackground(Graphics2D g2d) {
         // Sky gradient
         GradientPaint sky = new GradientPaint(0, 0, new Color(135, 206, 250),
-                0, HEIGHT, new Color(176, 224, 230));
+                0, getGameHeight(), new Color(176, 224, 230));
         g2d.setPaint(sky);
-        g2d.fillRect(0, 0, WIDTH, HEIGHT);
+        g2d.fillRect(0, 0, getGameWidth(), getGameHeight());
 
         // Ground
         g2d.setColor(new Color(34, 139, 34));
-        g2d.fillRect(0, HEIGHT - 50, WIDTH, 50);
+        g2d.fillRect(0, getGameHeight() - 50, getGameWidth(), 50);
     }
 
     private void drawUI(Graphics2D g2d) {
         // Equation box
         g2d.setColor(new Color(255, 255, 255, 200));
-        g2d.fillRoundRect(WIDTH / 2 - 150, 20, 300, 60, 15, 15);
+        g2d.fillRoundRect(getGameWidth() / 2 - 150, 20, 300, 60, 15, 15);
         g2d.setColor(Color.BLACK);
         g2d.setStroke(new BasicStroke(3));
-        g2d.drawRoundRect(WIDTH / 2 - 150, 20, 300, 60, 15, 15);
+        g2d.drawRoundRect(getGameWidth() / 2 - 150, 20, 300, 60, 15, 15);
 
         // Equation text
         g2d.setFont(new Font("Arial", Font.BOLD, 32));
         String equation = currentEquation.toString();
         FontMetrics fm = g2d.getFontMetrics();
         int textWidth = fm.stringWidth(equation);
-        g2d.drawString(equation, WIDTH / 2 - textWidth / 2, 60);
+        g2d.drawString(equation, getGameWidth() / 2 - textWidth / 2, 60);
 
         // Score and level
         g2d.setFont(new Font("Arial", Font.BOLD, 24));
@@ -358,7 +378,7 @@ public class GamePanel extends JPanel implements ActionListener {
         // Instructions
         g2d.setFont(new Font("Arial", Font.PLAIN, 16));
         g2d.setColor(Color.DARK_GRAY);
-        g2d.drawString("← → Arrow keys to move | P/Pause to pause | Catch the correct answer!", WIDTH / 2 - 280, HEIGHT - 15);
+        g2d.drawString("← → Arrow keys to move | P/Pause to pause | Catch the correct answer!", getGameWidth() / 2 - 280, getGameHeight() - 15);
 
         // Draw pause overlay
         if (isPaused) {
@@ -422,7 +442,7 @@ public class GamePanel extends JPanel implements ActionListener {
     }
 
     private void drawPauseButton(Graphics2D g2d) {
-        int btnX = WIDTH - 120;
+        int btnX = getGameWidth() - 120;
         int btnY = 20;
         int btnWidth = 100;
         int btnHeight = 40;
@@ -446,11 +466,11 @@ public class GamePanel extends JPanel implements ActionListener {
     private void drawPauseOverlay(Graphics2D g2d) {
         // Semi-transparent overlay
         g2d.setColor(new Color(0, 0, 0, 150));
-        g2d.fillRect(0, 0, WIDTH, HEIGHT);
+        g2d.fillRect(0, 0, getGameWidth(), getGameHeight());
 
         // Pause menu box
-        int menuX = WIDTH / 2 - 150;
-        int menuY = HEIGHT / 2 - 150;
+        int menuX = getGameWidth() / 2 - 150;
+        int menuY = getGameHeight() / 2 - 150;
         int menuWidth = 300;
         int menuHeight = 250;
 

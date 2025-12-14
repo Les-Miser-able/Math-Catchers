@@ -1,5 +1,7 @@
 package com.mathcatcher.game;
 
+import com.mathcatcher.utils.ResolutionManager;
+
 import javax.swing.*;
 import java.awt.*;
 
@@ -11,6 +13,7 @@ public class GameWindow extends JFrame {
     private JPanel difficultyContainer;
     private JPanel leaderboardContainer;
     private JPanel gameOverContainer;
+    private JPanel settingsContainer;
     private DifficultySelect.Difficulty currentDifficulty;
 
     public GameWindow() {
@@ -33,11 +36,15 @@ public class GameWindow extends JFrame {
         // Create game over screen
         createGameOverView();
 
+        // Create settings screen
+        createSettingsView();
+
         // Add menu view to card layout (game panel will be created when needed)
         cardPanel.add(menuContainer, "MENU");
         cardPanel.add(difficultyContainer, "DIFFICULTY");
         cardPanel.add(leaderboardContainer, "LEADERBOARD");
         cardPanel.add(gameOverContainer, "GAMEOVER");
+        cardPanel.add(settingsContainer, "SETTINGS");
 
         add(cardPanel);
 
@@ -66,13 +73,14 @@ public class GameWindow extends JFrame {
                 g2d.fillRect(0, getHeight() - 50, getWidth(), 50);
             }
         };
-        menuContainer.setPreferredSize(new Dimension(GamePanel.WIDTH, GamePanel.HEIGHT));
+        menuContainer.setPreferredSize(ResolutionManager.getCurrentResolution());
 
         // Create and add menu
         MainMenu menu = new MainMenu(
                 this::showDifficultyScreen,
                 this::quitGame,
-                this::viewLeaderboard
+                this::viewLeaderboard,
+                this::showSettings
         );
         menuContainer.add(menu, BorderLayout.CENTER);
     }
@@ -97,7 +105,7 @@ public class GameWindow extends JFrame {
                 g2d.fillRect(0, getHeight() - 50, getWidth(), 50);
             }
         };
-        difficultyContainer.setPreferredSize(new Dimension(GamePanel.WIDTH, GamePanel.HEIGHT));
+        difficultyContainer.setPreferredSize(ResolutionManager.getCurrentResolution());
 
         // Create and add difficulty selection
         DifficultySelect difficultySelect = new DifficultySelect(
@@ -183,7 +191,7 @@ public class GameWindow extends JFrame {
                 g2d.fillRect(0, getHeight() - 50, getWidth(), 50);
             }
         };
-        leaderboardContainer.setPreferredSize(new Dimension(GamePanel.WIDTH, GamePanel.HEIGHT));
+        leaderboardContainer.setPreferredSize(ResolutionManager.getCurrentResolution());
 
         // Create and add leaderboard
         LeaderboardPanel leaderboard = new LeaderboardPanel(this::showMainMenu);
@@ -214,6 +222,43 @@ public class GameWindow extends JFrame {
                 g2d.fillRect(0, getHeight() - 50, getWidth(), 50);
             }
         };
-        gameOverContainer.setPreferredSize(new Dimension(GamePanel.WIDTH, GamePanel.HEIGHT));
+        gameOverContainer.setPreferredSize(ResolutionManager.getCurrentResolution());
+    }
+
+    private void createSettingsView() {
+        // Create a background panel with game-like visuals
+        settingsContainer = new JPanel(new BorderLayout()) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                // Sky gradient background (similar to game)
+                GradientPaint sky = new GradientPaint(0, 0, new Color(135, 206, 250),
+                        0, getHeight(), new Color(176, 224, 230));
+                g2d.setPaint(sky);
+                g2d.fillRect(0, 0, getWidth(), getHeight());
+
+                // Ground
+                g2d.setColor(new Color(34, 139, 34));
+                g2d.fillRect(0, getHeight() - 50, getWidth(), 50);
+            }
+        };
+        settingsContainer.setPreferredSize(ResolutionManager.getCurrentResolution());
+
+        // Create and add settings panel
+        SettingsPanel settingsPanel = new SettingsPanel(this::showMainMenu, this::applySettings);
+        settingsContainer.add(settingsPanel, BorderLayout.CENTER);
+    }
+
+    private void showSettings() {
+        cardLayout.show(cardPanel, "SETTINGS");
+    }
+
+    private void applySettings() {
+        // Recreate the window with new resolution
+        dispose();
+        SwingUtilities.invokeLater(() -> new GameWindow());
     }
 }

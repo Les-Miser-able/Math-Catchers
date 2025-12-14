@@ -6,6 +6,7 @@ import java.awt.event.KeyEvent;
 public class Player {
     private double x, y;
     private double velocityX;
+    private int screenWidth; // Dynamic screen width for boundary checking
     private static final int WIDTH = 50;
     private static final int HEIGHT = 60;
     private static final double ACCELERATION = 1.5;
@@ -18,6 +19,11 @@ public class Player {
         this.x = startX;
         this.y = startY;
         this.velocityX = 0;
+        this.screenWidth = 800; // Default
+    }
+
+    public void setScreenWidth(int width) {
+        this.screenWidth = width;
     }
 
     public void update() {
@@ -45,8 +51,8 @@ public class Player {
             x = 0;
             velocityX = 0;
         }
-        if (x > 800 - WIDTH) {
-            x = 800 - WIDTH;
+        if (x > screenWidth - WIDTH) {
+            x = screenWidth - WIDTH;
             velocityX = 0;
         }
     }
