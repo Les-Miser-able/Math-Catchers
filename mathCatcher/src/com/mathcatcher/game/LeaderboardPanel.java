@@ -8,11 +8,13 @@ import java.util.List;
 
 public class LeaderboardPanel extends JPanel {
     private DifficultySelect.Difficulty selectedDifficulty;
+    private boolean showAll; // Flag to show all difficulties
     private JPanel scoresPanel;
     private JPanel container;
 
     public LeaderboardPanel(Runnable onBack) {
         this.selectedDifficulty = DifficultySelect.Difficulty.EASY;
+        this.showAll = true; // Default to showing all
         setLayout(new BorderLayout());
         setOpaque(false);
         setBorder(BorderFactory.createEmptyBorder(40, 40, 40, 40));
@@ -108,37 +110,49 @@ public class LeaderboardPanel extends JPanel {
         titlePanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 4, 0)); // Minimal bottom padding to bring buttons very close
 
         // ===== Difficulty Filter Buttons =====
-        JPanel filterPanel = new JPanel(new GridLayout(1, 3, 8, 0));
+        JPanel filterPanel = new JPanel(new GridLayout(1, 4, 8, 0)); // Changed to 4 columns for All button
         filterPanel.setOpaque(false);
         filterPanel.setBorder(BorderFactory.createEmptyBorder(4, 0, 24, 0)); // Very small top padding to be close to "Top 10"
         filterPanel.setPreferredSize(new Dimension(0, 58)); // Fixed height to ensure visibility (updated for bigger buttons)
         filterPanel.setMinimumSize(new Dimension(0, 58));
         filterPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 58));
 
-        DifficultyFilterButton easyButton = new DifficultyFilterButton("Easy", 
-            selectedDifficulty == DifficultySelect.Difficulty.EASY);
+        // All button
+        DifficultyFilterButton allButton = new DifficultyFilterButton("All", showAll);
+        allButton.addActionListener(e -> {
+            showAll = true;
+            updateDifficultyButtons(filterPanel);
+            refreshScores();
+        });
+
+        DifficultyFilterButton easyButton = new DifficultyFilterButton("Easy",
+            !showAll && selectedDifficulty == DifficultySelect.Difficulty.EASY);
         easyButton.addActionListener(e -> {
+            showAll = false;
             selectedDifficulty = DifficultySelect.Difficulty.EASY;
             updateDifficultyButtons(filterPanel);
             refreshScores();
         });
 
         DifficultyFilterButton mediumButton = new DifficultyFilterButton("Medium",
-            selectedDifficulty == DifficultySelect.Difficulty.MEDIUM);
+            !showAll && selectedDifficulty == DifficultySelect.Difficulty.MEDIUM);
         mediumButton.addActionListener(e -> {
+            showAll = false;
             selectedDifficulty = DifficultySelect.Difficulty.MEDIUM;
             updateDifficultyButtons(filterPanel);
             refreshScores();
         });
 
         DifficultyFilterButton hardButton = new DifficultyFilterButton("Hard",
-            selectedDifficulty == DifficultySelect.Difficulty.HARD);
+            !showAll && selectedDifficulty == DifficultySelect.Difficulty.HARD);
         hardButton.addActionListener(e -> {
+            showAll = false;
             selectedDifficulty = DifficultySelect.Difficulty.HARD;
             updateDifficultyButtons(filterPanel);
             refreshScores();
         });
 
+        filterPanel.add(allButton);
         filterPanel.add(easyButton);
         filterPanel.add(mediumButton);
         filterPanel.add(hardButton);
@@ -214,8 +228,14 @@ public class LeaderboardPanel extends JPanel {
         for (int i = 0; i < components.length; i++) {
             if (components[i] instanceof DifficultyFilterButton) {
                 DifficultyFilterButton btn = (DifficultyFilterButton) components[i];
-                DifficultySelect.Difficulty btnDifficulty = DifficultySelect.Difficulty.values()[i];
-                btn.setSelected(selectedDifficulty == btnDifficulty);
+                if (i == 0) {
+                    // All button
+                    btn.setSelected(showAll);
+                } else {
+                    // Difficulty buttons (Easy, Medium, Hard)
+                    DifficultySelect.Difficulty btnDifficulty = DifficultySelect.Difficulty.values()[i - 1];
+                    btn.setSelected(!showAll && selectedDifficulty == btnDifficulty);
+                }
             }
         }
     }
@@ -223,8 +243,14 @@ public class LeaderboardPanel extends JPanel {
     private void refreshScores() {
         scoresPanel.removeAll();
         
-        List<ScoreManager.ScoreEntry> scores = ScoreManager.getLeaderboard(selectedDifficulty);
-        
+        // Get scores based on filter selection
+        List<ScoreManager.ScoreEntry> scores;
+        if (showAll) {
+            scores = ScoreManager.getAllScores();
+        } else {
+            scores = ScoreManager.getLeaderboard(selectedDifficulty);
+        }
+
         if (scores.isEmpty()) {
             // Empty state
             JPanel emptyPanel = new JPanel();
@@ -413,22 +439,57 @@ public class LeaderboardPanel extends JPanel {
             int timeY = iconY + fm.getAscent() + 4;
             g2d.drawString(timeStr, textX, timeY);
 
-            // Score and difficulty - larger
-            int scoreX = width - 140;
+            // Score and difficulty badge - larger
+            int scoreX = width - 20;
+
+            // Draw difficulty badge
+            String diffStr = entry.getDifficulty().name().substring(0, 1); // E, M, or H
+            Color badgeColor;
+            switch (entry.getDifficulty()) {
+                case EASY:
+                    badgeColor = new Color(34, 197, 94); // green
+                    break;
+                case MEDIUM:
+                    badgeColor = new Color(234, 179, 8); // yellow
+                    break;
+                case HARD:
+                    badgeColor = new Color(239, 68, 68); // red
+                    break;
+                default:
+                    badgeColor = new Color(156, 163, 175); // gray
+            }
+
+            // Badge background
+            int badgeSize = 28;
+            int badgeX = scoreX - badgeSize - 10;
+            int badgeY = iconY - badgeSize / 2;
+            g2d.setColor(badgeColor);
+            g2d.fillRoundRect(badgeX, badgeY, badgeSize, badgeSize, 6, 6);
+
+            // Badge letter
+            g2d.setFont(new Font("SansSerif", Font.BOLD, 14));
+            g2d.setColor(Color.WHITE);
+            fm = g2d.getFontMetrics();
+            int badgeTextX = badgeX + (badgeSize - fm.stringWidth(diffStr)) / 2;
+            int badgeTextY = badgeY + (badgeSize - fm.getHeight()) / 2 + fm.getAscent();
+            g2d.drawString(diffStr, badgeTextX, badgeTextY);
+
+            // Score
             g2d.setFont(new Font("SansSerif", Font.BOLD, 28)); // Larger score
             g2d.setColor(new Color(251, 191, 36)); // yellow-400
             fm = g2d.getFontMetrics();
             String scoreStr = String.valueOf(entry.getScore());
-            int scoreTextX = scoreX - fm.stringWidth(scoreStr);
-            g2d.drawString(scoreStr, scoreTextX, dateY);
+            int scoreTextX = badgeX - fm.stringWidth(scoreStr) - 15;
+            g2d.drawString(scoreStr, scoreTextX, iconY + fm.getAscent() / 2);
 
-            g2d.setFont(new Font("SansSerif", Font.PLAIN, 14)); // Larger difficulty text
+            // Difficulty full name below badge (optional, smaller)
+            g2d.setFont(new Font("SansSerif", Font.PLAIN, 11));
             g2d.setColor(new Color(156, 163, 175)); // gray-400
             fm = g2d.getFontMetrics();
-            String diffStr = entry.getDifficulty().name().toLowerCase();
-            diffStr = diffStr.substring(0, 1).toUpperCase() + diffStr.substring(1);
-            int diffTextX = scoreX - fm.stringWidth(diffStr);
-            g2d.drawString(diffStr, diffTextX, timeY);
+            String fullDiff = entry.getDifficulty().name().toLowerCase();
+            fullDiff = fullDiff.substring(0, 1).toUpperCase() + fullDiff.substring(1);
+            int fullDiffX = badgeX + (badgeSize - fm.stringWidth(fullDiff)) / 2;
+            g2d.drawString(fullDiff, fullDiffX, badgeY + badgeSize + 12);
         }
     }
 
