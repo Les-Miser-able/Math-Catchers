@@ -4,6 +4,7 @@ import com.mathcatcher.entities.Player;
 import com.mathcatcher.entities.FallingNumber;
 import com.mathcatcher.utils.MathEquation;
 import com.mathcatcher.utils.ResolutionManager;
+import com.mathcatcher.utils.SoundManager;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
@@ -214,6 +215,11 @@ public class GamePanel extends JPanel implements ActionListener {
             frameCounter = 0;
             timeRemaining--;
 
+            // Play warning sound at 10 seconds
+            if (timeRemaining == 10) {
+                SoundManager.playSound(SoundManager.Sound.TIMER_WARNING);
+            }
+
             // Check if time ran out
             if (timeRemaining <= 0) {
                 timeRemaining = 0;
@@ -252,6 +258,8 @@ public class GamePanel extends JPanel implements ActionListener {
             // Check collision
             if (num.getBounds().intersects(player.getBounds()) && !num.isCaught()) {
                 num.setCaught(true);
+                // Play catch sound
+                SoundManager.playSound(SoundManager.Sound.CATCH);
                 handleNumberCatch(num.getValue());
                 // Remove the caught number
                 fallingNumbers.remove(i);
@@ -289,10 +297,15 @@ public class GamePanel extends JPanel implements ActionListener {
             score += 10 * level;
             correctAnswersCount++;
 
+            // Play correct sound
+            SoundManager.playSound(SoundManager.Sound.CORRECT);
+
             // Level up every 50 points
             int newLevel = (score / 50) + 1;
             if (newLevel > level) {
                 level = newLevel;
+                // Play level up sound
+                SoundManager.playSound(SoundManager.Sound.LEVEL_UP);
             }
 
             // Progress through difficulties based on correct answers:
@@ -318,6 +331,9 @@ public class GamePanel extends JPanel implements ActionListener {
             // Wrong answer: increment wrong answers count
             wrongAnswersCount++;
             
+            // Play wrong sound
+            SoundManager.playSound(SoundManager.Sound.WRONG);
+
             // Game over after 3 wrong answers
             if (wrongAnswersCount >= 3) {
                 endGame();
@@ -328,6 +344,10 @@ public class GamePanel extends JPanel implements ActionListener {
     private void endGame() {
         isGameOver = true;
         gameTimer.stop();
+
+        // Play game over sound
+        SoundManager.playSound(SoundManager.Sound.GAME_OVER);
+
         if (onGameOver != null) {
             onGameOver.run();
         }

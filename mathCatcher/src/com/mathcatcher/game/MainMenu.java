@@ -1,5 +1,6 @@
 package com.mathcatcher.game;
 
+import com.mathcatcher.utils.SoundManager;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
@@ -107,25 +108,37 @@ public class MainMenu extends JPanel {
         GradientButton startButton = new GradientButton("▶ Start Game",
             new Color(34, 197, 94), new Color(5, 150, 105), // green-500 to emerald-600
             new Color(22, 163, 74), new Color(5, 122, 85)); // hover colors
-        startButton.addActionListener(e -> onStartGame.run());
+        startButton.addActionListener(e -> {
+            SoundManager.playSound(SoundManager.Sound.BUTTON_CLICK);
+            onStartGame.run();
+        });
 
         // Leaderboard Button
         GradientButton leaderboardButton = new GradientButton("🏆 Leaderboard",
             new Color(234, 179, 8), new Color(234, 88, 12), // yellow-500 to orange-600
             new Color(202, 138, 4), new Color(194, 65, 12)); // hover colors
-        leaderboardButton.addActionListener(e -> onViewLeaderboard.run());
+        leaderboardButton.addActionListener(e -> {
+            SoundManager.playSound(SoundManager.Sound.BUTTON_CLICK);
+            onViewLeaderboard.run();
+        });
 
         // Settings Button
         GradientButton settingsButton = new GradientButton("⚙ Settings",
             new Color(59, 130, 246), new Color(37, 99, 235), // blue-500 to blue-600
             new Color(29, 78, 216), new Color(30, 64, 175)); // hover colors
-        settingsButton.addActionListener(e -> onSettings.run());
+        settingsButton.addActionListener(e -> {
+            SoundManager.playSound(SoundManager.Sound.BUTTON_CLICK);
+            onSettings.run();
+        });
 
         // Quit Game Button
         GradientButton quitButton = new GradientButton("✖ Quit Game",
             new Color(239, 68, 68), new Color(219, 39, 119), // red-500 to pink-600
             new Color(220, 38, 38), new Color(190, 24, 93)); // hover colors
-        quitButton.addActionListener(e -> onQuitGame.run());
+        quitButton.addActionListener(e -> {
+            SoundManager.playSound(SoundManager.Sound.BUTTON_CLICK);
+            onQuitGame.run();
+        });
 
         buttonPanel.add(startButton);
         buttonPanel.add(Box.createVerticalStrut(12)); // Normal spacing

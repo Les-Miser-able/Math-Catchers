@@ -65,6 +65,19 @@ public class ScoreManager {
         return new ArrayList<>(filtered.subList(0, size));
     }
     
+    public static List<ScoreEntry> getAllScores() {
+        // Get all scores sorted by score (descending)
+        List<ScoreEntry> allScores = new ArrayList<>(scores);
+        allScores.sort((a, b) -> Integer.compare(b.getScore(), a.getScore()));
+
+        // Return top 10 overall
+        if (allScores.isEmpty()) {
+            return new ArrayList<>();
+        }
+        int size = Math.min(allScores.size(), MAX_SCORES_PER_DIFFICULTY);
+        return new ArrayList<>(allScores.subList(0, size));
+    }
+
     @SuppressWarnings("unchecked")
     private static void loadScores() {
         try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(SCORE_FILE))) {
