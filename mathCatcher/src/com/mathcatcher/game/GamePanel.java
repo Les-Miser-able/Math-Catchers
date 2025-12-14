@@ -50,6 +50,11 @@ public class GamePanel extends JPanel implements ActionListener {
     @SuppressWarnings("unused")
     private Runnable onQuitToMenu;
 
+    // Timer fields
+    private int timeLimit; // Time limit in seconds based on difficulty
+    private int timeRemaining; // Time remaining in seconds
+    private int frameCounter; // Count frames for timer update (60 frames = 1 second)
+
     public GamePanel() {
         this(DifficultySelect.Difficulty.MEDIUM); // Default to medium
     }
@@ -143,8 +148,7 @@ public class GamePanel extends JPanel implements ActionListener {
         player = new Player(getGameWidth() / 2, getGameHeight() - 80);
         player.setScreenWidth(getGameWidth());
         fallingNumbers = new ArrayList<>();
-        // Always start with Easy difficulty regardless of what was selected
-        difficulty = DifficultySelect.Difficulty.EASY;
+        // Note: difficulty is already set from constructor parameter
         currentEquation = new MathEquation(1, difficulty);
         rand = new Random();
         score = 0;
@@ -155,6 +159,23 @@ public class GamePanel extends JPanel implements ActionListener {
         wrongAnswersCount = 0;
         isPaused = false;
         isGameOver = false;
+
+        // Initialize timer based on difficulty
+        switch (difficulty) {
+            case EASY:
+                timeLimit = 120; // 2 minutes
+                break;
+            case MEDIUM:
+                timeLimit = 90; // 1.5 minutes
+                break;
+            case HARD:
+                timeLimit = 60; // 1 minute
+                break;
+            default:
+                timeLimit = 90;
+        }
+        timeRemaining = timeLimit;
+        frameCounter = 0;
     }
 
     private void createPauseButton() {
@@ -186,6 +207,20 @@ public class GamePanel extends JPanel implements ActionListener {
         }
 
         player.update();
+
+        // Update timer (count down every 60 frames = 1 second)
+        frameCounter++;
+        if (frameCounter >= 60) {
+            frameCounter = 0;
+            timeRemaining--;
+
+            // Check if time ran out
+            if (timeRemaining <= 0) {
+                timeRemaining = 0;
+                endGame();
+                return;
+            }
+        }
 
         // Spawn falling numbers (rate based on difficulty)
         spawnCounter++;
@@ -372,6 +407,9 @@ public class GamePanel extends JPanel implements ActionListener {
         // Draw hearts for lives (3 - wrongAnswersCount)
         drawHearts(g2d, 20, 100);
 
+        // Draw timer (top right corner)
+        drawTimer(g2d);
+
         // Pause button
         drawPauseButton(g2d);
 
@@ -439,6 +477,58 @@ public class GamePanel extends JPanel implements ActionListener {
         int circleSize = size / 2;
         g2d.fillOval(centerX - size / 2, centerY - size / 2, circleSize, circleSize);
         g2d.fillOval(centerX, centerY - size / 2, circleSize, circleSize);
+    }
+
+    private void drawTimer(Graphics2D g2d) {
+        // Calculate minutes and seconds
+        int minutes = timeRemaining / 60;
+        int seconds = timeRemaining % 60;
+        String timeText = String.format("%d:%02d", minutes, seconds);
+
+        // Position at top right (above pause button)
+        int timerX = getGameWidth() - 120;
+        int timerY = 75;
+        int timerWidth = 100;
+        int timerHeight = 50;
+
+        // Timer background box
+        Color timerBgColor;
+        Color timerTextColor;
+
+        // Change color based on time remaining
+        if (timeRemaining <= 10) {
+            // Red - critical time
+            timerBgColor = new Color(220, 38, 38, 220);
+            timerTextColor = Color.WHITE;
+        } else if (timeRemaining <= 30) {
+            // Orange - warning
+            timerBgColor = new Color(234, 88, 12, 220);
+            timerTextColor = Color.WHITE;
+        } else {
+            // Green/Blue - normal
+            timerBgColor = new Color(59, 130, 246, 220);
+            timerTextColor = Color.WHITE;
+        }
+
+        g2d.setColor(timerBgColor);
+        g2d.fillRoundRect(timerX, timerY, timerWidth, timerHeight, 10, 10);
+        g2d.setColor(new Color(255, 255, 255, 100));
+        g2d.setStroke(new BasicStroke(2));
+        g2d.drawRoundRect(timerX, timerY, timerWidth, timerHeight, 10, 10);
+
+        // Timer label
+        g2d.setColor(timerTextColor);
+        g2d.setFont(new Font("Arial", Font.BOLD, 12));
+        String label = "TIME";
+        FontMetrics labelFm = g2d.getFontMetrics();
+        int labelWidth = labelFm.stringWidth(label);
+        g2d.drawString(label, timerX + (timerWidth - labelWidth) / 2, timerY + 15);
+
+        // Timer text
+        g2d.setFont(new Font("Arial", Font.BOLD, 24));
+        FontMetrics fm = g2d.getFontMetrics();
+        int textWidth = fm.stringWidth(timeText);
+        g2d.drawString(timeText, timerX + (timerWidth - textWidth) / 2, timerY + 38);
     }
 
     private void drawPauseButton(Graphics2D g2d) {

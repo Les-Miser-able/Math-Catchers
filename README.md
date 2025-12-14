@@ -5,6 +5,11 @@ A Java-based math learning game that helps students practice and improve their m
 ## ✨ Features
 
 - **Multiple Difficulty Levels**: Choose from Easy, Medium, Hard, or Expert difficulty
+- **Countdown Timer**: Race against the clock! Each difficulty has its own time limit
+  - Easy: 2 minutes
+  - Medium: 1.5 minutes
+  - Hard: 1 minute
+  - Color-coded timer (blue → orange → red as time runs out)
 - **Dynamic Gameplay**: Catch falling numbers to solve math equations
 - **Score Tracking**: Keep track of your high scores and compete with friends
 - **Leaderboard**: View top scores across all difficulty levels

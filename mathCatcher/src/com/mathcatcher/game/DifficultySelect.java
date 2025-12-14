@@ -115,7 +115,7 @@ public class DifficultySelect extends JPanel {
         // Easy Difficulty
         DifficultyButton easyButton = new DifficultyButton(
             "⚡ Easy",
-            "Addition & subtraction (1-10)",
+            "Addition & subtraction (1-10) | 2 min timer",
             new Color(34, 197, 94), new Color(5, 150, 105), // green-500 to emerald-600
             new Color(22, 163, 74), new Color(5, 122, 85)  // hover colors
         );
@@ -124,7 +124,7 @@ public class DifficultySelect extends JPanel {
         // Medium Difficulty
         DifficultyButton mediumButton = new DifficultyButton(
             "🔥 Medium",
-            "Includes multiplication (1-20)",
+            "Includes multiplication (1-20) | 1.5 min timer",
             new Color(234, 179, 8), new Color(234, 88, 12), // yellow-500 to orange-600
             new Color(202, 138, 4), new Color(194, 65, 12)  // hover colors
         );
@@ -133,7 +133,7 @@ public class DifficultySelect extends JPanel {
         // Hard Difficulty
         DifficultyButton hardButton = new DifficultyButton(
             "☠ Hard",
-            "All operations, faster speed (1-30)",
+            "All operations, faster speed (1-30) | 1 min timer",
             new Color(239, 68, 68), new Color(219, 39, 119), // red-500 to pink-600
             new Color(220, 38, 38), new Color(190, 24, 93)  // hover colors
         );
